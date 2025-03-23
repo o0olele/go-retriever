@@ -1,10 +1,10 @@
-package common
+package goretriever
 
 import (
 	"errors"
 	"go/ast"
 	"go/token"
-	"os"
+	"io"
 )
 
 func Max[T token.Pos](a, b T) T {
@@ -21,13 +21,13 @@ func Min[T token.Pos](a, b T) T {
 	return b
 }
 
-func ParseCode(file *os.File, beg, end int64) (string, error) {
-	if file == nil {
+func ParseCode(reader io.ReaderAt, beg, end int64) (string, error) {
+	if reader == nil {
 		return "", errors.New("invalid input")
 	}
 
 	buffer := make([]byte, end-beg+1)
-	if _, err := file.ReadAt(buffer, beg); err != nil {
+	if _, err := reader.ReadAt(buffer, beg); err != nil {
 		return "", errors.New("failed to read code")
 	}
 

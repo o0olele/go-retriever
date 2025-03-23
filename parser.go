@@ -1,4 +1,4 @@
-package parser
+package goretriever
 
 import (
 	"go/parser"
@@ -6,13 +6,29 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/o0lele/go-retriver/structed"
 )
 
-func Parse(dir string) []*structed.Package {
+func ParseString(name, content string) (*Package, error) {
+	fSet := token.NewFileSet()
 
-	var structedPkgs []*structed.Package
+	f, err := parser.ParseFile(fSet, name, content, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	pkg := NewPackage(name)
+
+	err = pkg.FromString(content, f, fSet)
+	if err != nil {
+		return nil, err
+	}
+
+	return pkg, nil
+}
+
+func Parse(dir string) []*Package {
+
+	var structedPkgs []*Package
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -32,12 +48,27 @@ func Parse(dir string) []*structed.Package {
 			}
 
 			for _, pkg := range pkgs {
-				tmp := structed.NewPackage(pkg.Name)
+
+				tmp := NewPackage(pkg.Name)
 				for path, f := range pkg.Files {
-					tmp.ParseOnlyStruct(path, f, fs)
+					file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
+					if err != nil {
+						return err
+					}
+
+					tmp.ParseStruct(file, f, fs)
+
+					file.Close()
 				}
 				for path, f := range pkg.Files {
-					tmp.ParseOnlyFunction(path, f, fs)
+					file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
+					if err != nil {
+						return err
+					}
+
+					tmp.ParseFunction(file, f, fs)
+
+					file.Close()
 				}
 
 				structedPkgs = append(structedPkgs, tmp)

@@ -1,11 +1,9 @@
-package structed
+package goretriever
 
 import (
 	"go/ast"
 	"go/token"
-	"os"
-
-	"github.com/o0lele/go-retriver/common"
+	"io"
 )
 
 type Function struct {
@@ -14,8 +12,8 @@ type Function struct {
 	Struct *Struct `json:"-"`
 }
 
-func newFunctionFromDecl(file *os.File, decl *ast.FuncDecl, fileSet *token.FileSet) (string, *Function) {
-	if file == nil || decl == nil {
+func newFunctionFromDecl(reader io.ReaderAt, decl *ast.FuncDecl, fileSet *token.FileSet) (string, *Function) {
+	if reader == nil || decl == nil {
 		return "", nil
 	}
 
@@ -36,12 +34,12 @@ func newFunctionFromDecl(file *os.File, decl *ast.FuncDecl, fileSet *token.FileS
 		}
 	}
 
-	beg, end, err := common.GetFuncDeclOffset(decl, fileSet)
+	beg, end, err := GetFuncDeclOffset(decl, fileSet)
 	if err != nil {
 		panic(err)
 	}
 
-	code, err := common.ParseCode(file, int64(beg), int64(end))
+	code, err := ParseCode(reader, int64(beg), int64(end))
 	if err != nil {
 		return "", nil
 	}

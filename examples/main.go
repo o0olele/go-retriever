@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/o0lele/go-retriver/parser"
+	goretriever "github.com/o0lele/go-retriver"
 	"golang.org/x/tools/go/callgraph"
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/go/pointer"
@@ -107,7 +107,7 @@ func getCallRoute(nodeStr string) string {
 }
 
 func GetStructedData() {
-	pkgs := parser.Parse("../detour-go")
+	pkgs := goretriever.Parse("../detour-go")
 
 	file, err := os.OpenFile("output.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {

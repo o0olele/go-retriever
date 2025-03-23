@@ -1,11 +1,9 @@
-package structed
+package goretriever
 
 import (
 	"go/ast"
 	"go/token"
-	"os"
-
-	"github.com/o0lele/go-retriver/common"
+	"io"
 )
 
 type Struct struct {
@@ -14,8 +12,8 @@ type Struct struct {
 	Methods map[string]*Function
 }
 
-func newStructFromDecl(file *os.File, decl *ast.GenDecl, fileSet *token.FileSet) *Struct {
-	if file == nil || decl == nil {
+func newStructFromDecl(reader io.ReaderAt, decl *ast.GenDecl, fileSet *token.FileSet) *Struct {
+	if reader == nil || decl == nil {
 		return nil
 	}
 
@@ -34,12 +32,12 @@ func newStructFromDecl(file *os.File, decl *ast.GenDecl, fileSet *token.FileSet)
 			Methods: make(map[string]*Function),
 		}
 
-		beg, end, err := common.GetGenDeclOffset(decl, fileSet)
+		beg, end, err := GetGenDeclOffset(decl, fileSet)
 		if err != nil {
 			panic(err)
 		}
 
-		code, err := common.ParseCode(file, int64(beg), int64(end))
+		code, err := ParseCode(reader, int64(beg), int64(end))
 		if err != nil {
 			return nil
 		}
