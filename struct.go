@@ -32,12 +32,12 @@ func newStructFromDecl(reader io.ReaderAt, decl *ast.GenDecl, fileSet *token.Fil
 			Methods: make(map[string]*Function),
 		}
 
-		beg, end, err := GetGenDeclOffset(decl, fileSet)
+		beg, end, err := getGenDeclOffset(decl, fileSet)
 		if err != nil {
 			panic(err)
 		}
 
-		code, err := ParseCode(reader, int64(beg), int64(end))
+		code, err := parseCode(reader, int64(beg), int64(end))
 		if err != nil {
 			return nil
 		}

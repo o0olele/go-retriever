@@ -21,7 +21,7 @@ func Min[T token.Pos](a, b T) T {
 	return b
 }
 
-func ParseCode(reader io.ReaderAt, beg, end int64) (string, error) {
+func parseCode(reader io.ReaderAt, beg, end int64) (string, error) {
 	if reader == nil {
 		return "", errors.New("invalid input")
 	}
@@ -34,7 +34,7 @@ func ParseCode(reader io.ReaderAt, beg, end int64) (string, error) {
 	return string(buffer), nil
 }
 
-func GetFuncDeclOffset(decl *ast.FuncDecl, fileSet *token.FileSet) (int, int, error) {
+func getFuncDeclOffset(decl *ast.FuncDecl, fileSet *token.FileSet) (int, int, error) {
 	if decl == nil {
 		return 0, 0, errors.New("invalid input")
 	}
@@ -56,7 +56,7 @@ func GetFuncDeclOffset(decl *ast.FuncDecl, fileSet *token.FileSet) (int, int, er
 	return fileSet.Position(beg).Offset, fileSet.Position(end).Offset, nil
 }
 
-func GetGenDeclOffset(decl *ast.GenDecl, fileSet *token.FileSet) (int, int, error) {
+func getGenDeclOffset(decl *ast.GenDecl, fileSet *token.FileSet) (int, int, error) {
 	if decl == nil {
 		return 0, 0, errors.New("invalid input")
 	}

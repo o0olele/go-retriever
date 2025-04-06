@@ -7,9 +7,10 @@ import (
 )
 
 type Function struct {
-	Name   string
-	Code   string
-	Struct *Struct `json:"-"`
+	Name       string
+	Code       string
+	Defination string
+	Struct     *Struct `json:"-"`
 }
 
 func newFunctionFromDecl(reader io.ReaderAt, decl *ast.FuncDecl, fileSet *token.FileSet) (string, *Function) {
@@ -34,12 +35,12 @@ func newFunctionFromDecl(reader io.ReaderAt, decl *ast.FuncDecl, fileSet *token.
 		}
 	}
 
-	beg, end, err := GetFuncDeclOffset(decl, fileSet)
+	beg, end, err := getFuncDeclOffset(decl, fileSet)
 	if err != nil {
 		panic(err)
 	}
 
-	code, err := ParseCode(reader, int64(beg), int64(end))
+	code, err := parseCode(reader, int64(beg), int64(end))
 	if err != nil {
 		return "", nil
 	}
