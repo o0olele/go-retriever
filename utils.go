@@ -87,3 +87,13 @@ func getGenDeclOffset(decl *ast.GenDecl, fileSet *token.FileSet) (int, int, erro
 
 	return fileSet.Position(beg).Offset, fileSet.Position(end).Offset, nil
 }
+
+// Contains.
+func funcContains(a []*FuncDescriptor, x *FuncDescriptor) bool {
+	for _, n := range a {
+		if x.TypeHash() == n.TypeHash() {
+			return true
+		}
+	}
+	return false
+}

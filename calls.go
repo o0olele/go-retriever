@@ -345,12 +345,12 @@ func BuildCallGraph(
 					}
 
 					if fun != nil {
-						if !Contains(backwardCallGraph[fun], currentFun) {
+						if !funcContains(backwardCallGraph[fun], currentFun) {
 							if funcDecls[fun] {
 								backwardCallGraph[fun] = append(backwardCallGraph[fun], currentFun)
 							}
 						}
-						if !Contains(forwardCallGraph[currentFun], fun) {
+						if !funcContains(forwardCallGraph[currentFun], fun) {
 							forwardCallGraph[currentFun] = append(forwardCallGraph[currentFun], fun)
 						}
 					}
@@ -464,14 +464,4 @@ func InferRootFunctionsFromGraph(callgraph map[*FuncDescriptor][]*FuncDescriptor
 		}
 	}
 	return rootFunctions
-}
-
-// Contains.
-func Contains(a []*FuncDescriptor, x *FuncDescriptor) bool {
-	for _, n := range a {
-		if x.TypeHash() == n.TypeHash() {
-			return true
-		}
-	}
-	return false
 }
