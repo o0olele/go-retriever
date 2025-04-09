@@ -10,6 +10,8 @@ type Struct struct {
 	Name    string
 	Code    string
 	Methods map[string]*Function
+	Beg     int `json:"-"`
+	End     int `json:"-"`
 }
 
 func newStructFromDecl(reader io.ReaderAt, decl *ast.GenDecl, fileSet *token.FileSet) *Struct {
@@ -42,6 +44,8 @@ func newStructFromDecl(reader io.ReaderAt, decl *ast.GenDecl, fileSet *token.Fil
 			return nil
 		}
 		s.Code = code
+		s.Beg = beg
+		s.End = end
 		return s
 	}
 

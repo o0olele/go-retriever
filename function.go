@@ -11,6 +11,8 @@ type Function struct {
 	Code       string
 	Defination string
 	Struct     *Struct `json:"-"`
+	Beg        int     `json:"-"`
+	End        int     `json:"-"`
 }
 
 func newFunctionFromDecl(reader io.ReaderAt, decl *ast.FuncDecl, fileSet *token.FileSet) (string, *Function) {
@@ -46,6 +48,8 @@ func newFunctionFromDecl(reader io.ReaderAt, decl *ast.FuncDecl, fileSet *token.
 	}
 
 	f.Code = code
+	f.Beg = beg
+	f.End = end
 
 	return structName, f
 }

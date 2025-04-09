@@ -1,10 +1,12 @@
 package goretriever
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
+	"os"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -15,6 +17,7 @@ import (
 type FuncDescriptor struct {
 	Id       string
 	DeclType string
+	Code     string
 }
 
 // Function TypeHash. Each function is itentified by its
@@ -85,53 +88,56 @@ func FindRootFunctions(projectPath string, packagePattern []string, functionLabe
 
 // GetMostInnerAstIdent takes most inner identifier used for
 // function call. For a.b.foo(), `b` will be the most inner identifier.
-func GetMostInnerAstIdent(inSel *ast.SelectorExpr) *ast.Ident {
+func GetMostInnerAstIdent(inSel *ast.SelectorExpr) (*ast.Ident, error) {
 	var l []*ast.Ident
 	var e ast.Expr
+	var isBreak bool
 	e = inSel
 	for e != nil {
-		if _, ok := e.(*ast.Ident); ok {
-			l = append(l, e.(*ast.Ident))
-			break
-		} else if _, ok := e.(*ast.SelectorExpr); ok {
-			l = append(l, e.(*ast.SelectorExpr).Sel)
-			e = e.(*ast.SelectorExpr).X
-		} else if _, ok := e.(*ast.CallExpr); ok {
-			e = e.(*ast.CallExpr).Fun
-		} else if _, ok := e.(*ast.IndexExpr); ok {
-			e = e.(*ast.IndexExpr).X
-		} else if _, ok := e.(*ast.UnaryExpr); ok {
-			e = e.(*ast.UnaryExpr).X
-		} else if _, ok := e.(*ast.ParenExpr); ok {
-			e = e.(*ast.ParenExpr).X
-		} else if _, ok := e.(*ast.SliceExpr); ok {
-			e = e.(*ast.SliceExpr).X
-		} else if _, ok := e.(*ast.IndexListExpr); ok {
-			e = e.(*ast.IndexListExpr).X
-		} else if _, ok := e.(*ast.StarExpr); ok {
-			e = e.(*ast.StarExpr).X
-		} else if _, ok := e.(*ast.TypeAssertExpr); ok {
-			e = e.(*ast.TypeAssertExpr).X
-		} else if _, ok := e.(*ast.CompositeLit); ok {
-			// TODO dummy implementation
-			if len(e.(*ast.CompositeLit).Elts) == 0 {
-				e = e.(*ast.CompositeLit).Type
+		switch ne := e.(type) {
+		case *ast.Ident:
+			l = append(l, ne)
+			isBreak = true
+		case *ast.SelectorExpr:
+			l = append(l, ne.Sel)
+			e = ne.X
+		case *ast.CallExpr:
+			e = ne.Fun
+		case *ast.IndexExpr:
+			e = ne.X
+		case *ast.UnaryExpr:
+			e = ne.X
+		case *ast.ParenExpr:
+			e = ne.X
+		case *ast.SliceExpr:
+			e = ne.X
+		case *ast.IndexListExpr:
+			e = ne.X
+		case *ast.StarExpr:
+			e = ne.X
+		case *ast.TypeAssertExpr:
+			e = ne.X
+		case *ast.CompositeLit:
+			if len(ne.Elts) == 0 {
+				e = ne.Type
 			} else {
-				e = e.(*ast.CompositeLit).Elts[0]
+				e = ne.Elts[0]
 			}
-		} else if _, ok := e.(*ast.KeyValueExpr); ok {
-			e = e.(*ast.KeyValueExpr).Value
-		} else {
-			// TODO this is uncaught expression
-			panic("uncaught expression")
+		case *ast.KeyValueExpr:
+			e = ne.Value
+		default:
+			return nil, errors.New("uncaught expression")
+		}
+		if isBreak {
+			break
 		}
 	}
 	if len(l) < 2 {
-		panic("selector list should have at least 2 elems")
+		return nil, errors.New("selector list should have at least 2 elems")
 	}
 	// caller or receiver is always
 	// at position 1, function is at 0
-	return l[1]
+	return l[1], nil
 }
 
 // GetPkgPathFromRecvInterface builds package path taking
@@ -201,7 +207,7 @@ func GetPkgPathFromFunctionRecv(pkg *packages.Package,
 
 // GetSelectorPkgPath builds packages path according to selector expr.
 func GetSelectorPkgPath(sel *ast.SelectorExpr, pkg *packages.Package, pkgPath string) string {
-	caller := GetMostInnerAstIdent(sel)
+	caller, _ := GetMostInnerAstIdent(sel)
 	if caller == nil {
 		return pkgPath
 	}
@@ -286,6 +292,7 @@ func newFuncDescFromCallIdent(pkg *packages.Package, f ast.Expr) *FuncDescriptor
 	return &FuncDescriptor{
 		Id:       pkgPath + "." + obj.Name(),
 		DeclType: obj.Type().String(),
+		Code:     obj.String(),
 	}
 }
 
@@ -311,6 +318,7 @@ func newFuncDescFromCallSelector(pkg *packages.Package, f ast.Expr) *FuncDescrip
 	return &FuncDescriptor{
 		Id:       pkgPath + "." + obj.Name(),
 		DeclType: obj.Type().String(),
+		Code:     obj.String(),
 	}
 }
 
@@ -364,6 +372,19 @@ func BuildCallGraph(
 							Id:       funId,
 							DeclType: def.Type().String(),
 						}
+
+						beg, end, err := getFuncDeclOffset(xNode, fset)
+						if err == nil {
+							file, err := os.OpenFile(fset.File(node.Pos()).Name(), os.O_RDONLY, os.ModePerm)
+							if err == nil {
+								code, err := parseCode(file, int64(beg), int64(end))
+								if err == nil {
+									fun.Code = code
+								}
+								file.Close()
+							}
+						}
+
 						funcDecls[fun] = true
 						currentFun = fun
 
