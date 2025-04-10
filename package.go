@@ -34,7 +34,10 @@ func (p *Package) AddFunction(f *Function) {
 func (p *Package) AddMethod(structName string, f *Function) {
 	s := p.Structs[structName]
 	if s == nil {
-		return
+		s = &Struct{
+			Name: structName,
+		}
+		p.Structs[structName] = s
 	}
 	s.AddMethod(f)
 }
